@@ -1,0 +1,34 @@
+# โครงสร้างพื้นฐานสำหรับข้อสอบปลายภาค ส่วนที่ 2
+# ใช้: docker compose up -d   แล้วคัดลอก .env.example เป็น .env
+
+# ===== ถ้า up แล้วขึ้น "port is already allocated" =====
+#   เช็กว่าใครใช้พอร์ตอยู่:  netstat -ano | findstr :3309   (หรือ :8080)
+#   แล้วเปลี่ยนเฉพาะเลข "ตัวหน้า" ตามจุดที่มี [เปลี่ยนได้] ด้านล่าง
+#   เสร็จแล้วรัน:  docker compose down  ->  docker compose up -d
+
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      # รหัสนี้ต้องตรงกับ DB_PASSWORD ใน .env
+      # (ถ้าเปลี่ยนรหัสทีหลัง ต้อง docker compose down -v แล้ว up ใหม่ เพราะ MySQL ตั้งรหัสแค่ครั้งแรก)
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: exam_db
+    ports:
+      # [เปลี่ยนได้] ถ้า 3309 ชน เช่นเปลี่ยนเป็น "3310:3306"
+      #   แล้วต้องแก้ใน .env ให้ตรงกันด้วย -> DB_PORT=3310
+      - "3309:3306"
+    command: --default-authentication-plugin=caching_sha2_password
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      # [เปลี่ยนได้] ถ้า 8080 ชน เช่นเปลี่ยนเป็น "8081:80" แล้วเข้า http://localhost:8081
+      #   (ไม่ต้องแก้ .env เพราะ Node ไม่ได้ใช้ phpMyAdmin)
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql   # ชื่อ service ด้านบน
+      PMA_PORT: 3306    # ห้ามเปลี่ยนเป็น 3309 เพราะคุยกันภายใน Docker ใช้พอร์ตข้างใน
+    depends_on:
+      - mysql
